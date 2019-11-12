@@ -2,17 +2,20 @@ package org.icde.juriedu.service;
 
 import org.apache.http.HttpHost;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.icde.juriedu.search.OutputObject;
 import org.icde.juriedu.model.Entry;
 import org.icde.juriedu.model.EntryType;
 import org.icde.juriedu.util.JsonUtil;
@@ -21,6 +24,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -36,7 +40,7 @@ public class SearchService {
         client = new RestHighLevelClient(RestClient.builder(new HttpHost(esHost, esPort, esScheme)));
     }
 
-    public OutputObject search(String searchKey, EntryType entryType, int size) {
+    public List<Entry> search(String searchKey, EntryType entryType, int size) {
         try {
             String[] indexNames = (entryType != null ? Stream.of(entryType) : Stream.of(entryType.values()))
                     .map(Enum::name)
@@ -47,14 +51,35 @@ public class SearchService {
             SearchRequest searchRequest = new SearchRequest(indexNames)
                     .source(searchSourceBuilder);
             SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
-            List<Entry> result = Arrays.stream(searchResponse.getHits().getHits())
+            return Arrays.stream(searchResponse.getHits().getHits())
                     .map(SearchHit::getSourceAsString)
                     .map(JsonUtil::fromJsonToEntry)
                     .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
-            OutputObject out = new OutputObject();
-            out.setResult(result);
-            return out;
+    public Optional<Entry> getDictionaryEntry(String key) {
+        try {
+            GetRequest getRequest = new GetRequest(EntryType.dictionary.name())
+                    .id(key);
+            GetResponse getResponse = client.get(getRequest, RequestOptions.DEFAULT);
+            return Optional.ofNullable(getResponse)
+                    .map(GetResponse::getSourceAsString)
+                    .map(JsonUtil::fromJsonToEntry);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public void save(Entry entry) {
+        try {
+            String indexName = entry.getEntryType().name();
+            IndexRequest request = new IndexRequest(indexName)
+                    .id(entry.getKey())
+                    .source(JsonUtil.toJson(entry), XContentType.JSON);
+            client.index(request, RequestOptions.DEFAULT);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }

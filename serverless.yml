@@ -1,12 +1,35 @@
+org: aurelcanciu
+app: juriedu-api
 service: juriedu
 
 provider:
   name: aws
   region: eu-west-1
+  profile: icde
+  stage: ${env:STAGE}
   tracing:
     lambda: true
+  vpc:
+    securityGroupIds:
+      - Ref: LambdaSecurityGroup
+    subnetIds:
+      - ${env:SUBNET_ID}
   environment:
     ELASTICSEARCH_HOST: ${env:ELASTICSEARCH_HOST}
+    ELASTICSEARCH_PORT: ${env:ELASTICSEARCH_PORT}
+    ELASTICSEARCH_SCHEME: ${env:ELASTICSEARCH_SCHEME}
+
+resources:
+  Resources:
+    LambdaSecurityGroup:
+      Type: "AWS::EC2::SecurityGroup"
+      Properties:
+        GroupName: ${self:service}-${self:provider.stage}-lambda
+        GroupDescription: Allow all outbound traffic, no inbound
+        SecurityGroupIngress:
+          - IpProtocol: -1
+            CidrIp: 127.0.0.1/32
+        VpcId: ${env:VPC_ID}
 
 plugins:
   - serverless-dotenv-plugin
@@ -18,44 +41,107 @@ functions:
   searchJvm:
     runtime: java8
     handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
+    environment:
+      QUARKUS_LAMBDA_HANDLER: search
     package:
       artifact: target/service-1.0-SNAPSHOT-runner.jar
     events:
       - http:
           method: get
-          path: jvm
-          integration: lambda
+          path: search
+          cors:
+            origin: '*'
+            allowCredentials: false
+            maxAge: 86400
+            cacheControl: 'max-age=600, s-maxage=600, proxy-revalidate'
           request:
             parameters:
               querystrings:
                 type: true
                 search: true
-            template:
-              application/json: >
-                {
-                  "type" : "$input.params('type')",
-                  "search" : "$input.params('search')",
-                  "size" : "$input.params('size')"
-                }
-  searchNative:
-    runtime: provided
-    handler: handler
+# searchNative:
+#   runtime: provided
+#   handler: handler
+#   environment:
+#     QUARKUS_LAMBDA_HANDLER: search
+#   package:
+#     artifact: target/function.zip
+#   events:
+#     - http:
+#         method: get
+#         path: searchn
+#         integration: lambda
+#         request:
+#           parameters:
+#             querystrings:
+#               type: true
+#               search: true
+  dictionaryJvm:
+    runtime: java8
+    handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
+    environment:
+      QUARKUS_LAMBDA_HANDLER: dictionary
     package:
-      artifact: target/function.zip
+      artifact: target/service-1.0-SNAPSHOT-runner.jar
     events:
       - http:
           method: get
-          path: native
-          integration: lambda
+          path: get/dictionary/{key}
+          cors:
+            origin: '*'
+            allowCredentials: false
+            maxAge: 86400
+            cacheControl: 'max-age=600, s-maxage=600, proxy-revalidate'
           request:
             parameters:
-              querystrings:
+              paths:
+                key: true
+#   dictionaryNative:
+#     runtime: provided
+#     handler: handler
+#     environment:
+#       QUARKUS_LAMBDA_HANDLER: dictionary
+#     package:
+#       artifact: target/function.zip
+#     events:
+#       - http:
+#           method: get
+#           path: get/dictionaryn/{key}
+#           request:
+#             parameters:
+#               paths:
+#                 key: true
+#
+  indexJvm:
+    runtime: java8
+    handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
+    environment:
+      QUARKUS_LAMBDA_HANDLER: index
+    package:
+      artifact: target/service-1.0-SNAPSHOT-runner.jar
+    events:
+      - http:
+          method: post
+          path: index/{type}
+          cors: true
+          authorizer:
+            type: aws_iam
+          request:
+            parameters:
+              paths:
                 type: true
-                search: true
-            template:
-              application/json: >
-                {
-                  "type" : "$input.params('type')",
-                  "search" : "$input.params('search')",
-                  "size" : "$input.params('size')"
-                }
+#   indexNative:
+#     runtime: provided
+#     handler: handler
+#     environment:
+#       QUARKUS_LAMBDA_HANDLER: index
+#     package:
+#       artifact: target/function.zip
+#     events:
+#       - http:
+#           method: get
+#           path: indexn/{type}
+#           request:
+#             parameters:
+#               paths:
+#                 type: true
