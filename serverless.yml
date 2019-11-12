@@ -1,0 +1,56 @@
+service: juriedu
+
+provider:
+  name: aws
+  region: eu-west-1
+  tracing:
+    lambda: true
+
+package:
+  individually: true
+
+functions:
+  searchJvm:
+    runtime: java8
+    handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
+    package:
+      artifact: target/service-1.0-SNAPSHOT-runner.jar
+    events:
+      - http:
+          method: get
+          path: jvm
+          integration: lambda
+          request:
+            parameters:
+              querystrings:
+                type: true
+                search: true
+            template:
+              application/json: >
+                {
+                  "type" : "$input.params('type')",
+                  "search" : "$input.params('search')",
+                  "size" : "$input.params('size')"
+                }
+  searchNative:
+    runtime: provided
+    handler: handler
+    package:
+      artifact: target/function.zip
+    events:
+      - http:
+          method: get
+          path: native
+          integration: lambda
+          request:
+            parameters:
+              querystrings:
+                type: true
+                search: true
+            template:
+              application/json: >
+                {
+                  "type" : "$input.params('type')",
+                  "search" : "$input.params('search')",
+                  "size" : "$input.params('size')"
+                }
