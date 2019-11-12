@@ -5,6 +5,11 @@ provider:
   region: eu-west-1
   tracing:
     lambda: true
+  environment:
+    ELASTICSEARCH_HOST: ${env:ELASTICSEARCH_HOST}
+
+plugins:
+  - serverless-dotenv-plugin
 
 package:
   individually: true
