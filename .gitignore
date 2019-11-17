@@ -17,3 +17,5 @@ target
 .mvn/
 
 .env*
+
+.aws-sam/

@@ -1,0 +1,73 @@
+Parameters:
+  VpcId:
+    Type: String
+
+  SubnetId:
+    Type: String
+
+  StageName:
+    Type: String
+
+  ElasticSearchHost:
+    Type: String
+    Default: localhost
+
+  ElasticSearchPort:
+    Type: String
+    Default: 9200
+
+  ElasticSearchScheme:
+    Type: String
+    Default: http
+
+Globals:
+  Function:
+    Timeout: 20
+    Handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
+    Runtime: java8
+    MemorySize: 512
+    CodeUri: target/service-1.0-SNAPSHOT-runner.jar
+    Tracing: PassThrough
+    VpcConfig:
+      SecurityGroupIds:
+        - !Ref LambdaSecurityGroup
+      SubnetIds:
+        - !Ref SubnetId
+    Environment:
+      Variables:
+        ELASTICSEARCH_HOST: !Ref ElasticSearchHost
+        ELASTICSEARCH_PORT: !Ref ElasticSearchPort
+        ELASTICSEARCH_SCHEME: !Ref ElasticSearchScheme
+  Api:
+    EndpointConfiguration: REGIONAL
+    Cors: "'*'"
+    BinaryMediaTypes:
+      - "*/*"
+
+Resources:
+  LambdaSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: Lambda
+      GroupDescription: Allow all outbound traffic, no inbound
+      SecurityGroupIngress:
+        - IpProtocol: -1
+          CidrIp: 127.0.0.1/32
+      VpcId: !Ref VpcId
+
+  Search:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Environment:
+        Variables:
+          QUARKUS_LAMBDA_HANDLER: search
+      Events:
+        Search:
+          Type: Api
+          Properties:
+            Method: get
+            Path: /search
+
+Outputs:
+  Api:
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/"

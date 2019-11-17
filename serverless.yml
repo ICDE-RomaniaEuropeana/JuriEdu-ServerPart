@@ -6,6 +6,7 @@ provider:
   name: aws
   region: eu-west-1
   profile: icde
+  runtime: java8
   stage: ${env:STAGE}
   tracing:
     lambda: true

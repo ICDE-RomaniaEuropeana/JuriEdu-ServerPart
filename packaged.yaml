@@ -1,0 +1,64 @@
+Parameters:
+  VpcId:
+    Type: String
+  SubnetId:
+    Type: String
+  StageName:
+    Type: String
+  ElasticSearchHost:
+    Type: String
+  ElasticSearchPort:
+    Type: String
+  ElasticSearchScheme:
+    Type: String
+Globals:
+  Function:
+    Timeout: 20
+    Handler: io.quarkus.amazon.lambda.runtime.QuarkusStreamHandler::handleRequest
+    Runtime: java8
+    MemorySize: 512
+    Tracing: PassThrough
+    VpcConfig:
+      SecurityGroupIds:
+      - Ref: LambdaSecurityGroup
+      SubnetIds:
+      - Ref: SubnetId
+    Environment:
+      Variables:
+        ELASTICSEARCH_HOST:
+          Ref: ElasticSearchHost
+        ELASTICSEARCH_PORT:
+          Ref: ElasticSearchPort
+        ELASTICSEARCH_SCHEME:
+          Ref: ElasticSearchScheme
+  Api:
+    EndpointConfiguration: REGIONAL
+    Cors: '''*'''
+Resources:
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Lambda
+      GroupDescription: Allow all outbound traffic, no inbound
+      SecurityGroupIngress:
+      - IpProtocol: -1
+        CidrIp: 127.0.0.1/32
+      VpcId:
+        Ref: VpcId
+  Search:
+    Type: AWS::Serverless::Function
+    Properties:
+      Environment:
+        Variables:
+          QUARKUS_LAMBDA_HANDLER: search
+      Events:
+        Search:
+          Type: Api
+          Properties:
+            Method: get
+            Path: /search
+      CodeUri: s3://icde-juriedu-dev/30199d80c0e1673f2a7ca8955c7a27ff
+Outputs:
+  Api:
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/

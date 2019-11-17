@@ -8,13 +8,13 @@
 ## Build
 
 ```
-$ mvn clean package -Dnative=true -Dnative-image.docker-build=true
-```
-
-## Run Elasticsearch
+$ mvn clean package
 
 ```
-$ cd docker/elasticsearch
+
+## Run Elasticsearch & kibana
+
+```
 $ docker-compose up -d
 ```
 
