@@ -22,10 +22,6 @@ $ docker-compose up -d
 
 With JVM:
 ```
-$ sls invoke local --docker --docker-arg='--network host' -f searchJvm --path payload.json
-```
-
-With native:
-```
-$ sls invoke local --docker --docker-arg='--network host' -f searchNative --path payload.json
+$ sls invoke local --docker --docker-arg='--network host' -f searchJvm --path search-payload.json
+$ sls invoke local --docker --docker-arg='--network host' -f dictionaryJvm --path dictionary-payload.json
 ```
