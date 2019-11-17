@@ -18,10 +18,8 @@ $ mvn clean package
 $ docker-compose up -d
 ```
 
-## Invoke locally
+## Run local SAM server
 
-With JVM:
 ```
-$ sls invoke local --docker --docker-arg='--network host' -f searchJvm --path search-payload.json
-$ sls invoke local --docker --docker-arg='--network host' -f dictionaryJvm --path dictionary-payload.json
+$ sam local start-api --docker-network host
 ```
