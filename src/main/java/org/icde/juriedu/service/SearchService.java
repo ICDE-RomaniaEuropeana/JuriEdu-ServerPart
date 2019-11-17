@@ -11,13 +11,15 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.Index;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.icde.juriedu.model.Entry;
-import org.icde.juriedu.model.EntryType;
+import org.icde.juriedu.model.DictionaryEntry;
+import org.icde.juriedu.model.Question;
+import org.icde.juriedu.model.IndexType;
 import org.icde.juriedu.util.JsonUtil;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -25,13 +27,16 @@ import javax.inject.Inject;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @ApplicationScoped
 public class SearchService {
 
-    private final RestHighLevelClient client;
+    private RestHighLevelClient client;
+
+    public SearchService() {}
 
     @Inject
     public SearchService(@ConfigProperty(name = "elasticsearch.host") String esHost,
@@ -40,9 +45,9 @@ public class SearchService {
         client = new RestHighLevelClient(RestClient.builder(new HttpHost(esHost, esPort, esScheme)));
     }
 
-    public List<Entry> search(String searchKey, EntryType entryType, int size) {
+    public List<Question> search(String searchKey, IndexType indexType, int size) {
         try {
-            String[] indexNames = (entryType != null ? Stream.of(entryType) : Stream.of(entryType.values()))
+            String[] indexNames = (indexType != null ? Stream.of(indexType) : Stream.of(IndexType.values()))
                     .map(Enum::name)
                     .toArray(String[]::new);
             SearchSourceBuilder searchSourceBuilder = SearchSourceBuilder.searchSource()
@@ -53,32 +58,39 @@ public class SearchService {
             SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
             return Arrays.stream(searchResponse.getHits().getHits())
                     .map(SearchHit::getSourceAsString)
-                    .map(JsonUtil::fromJsonToEntry)
+                    .map(JsonUtil::fromJsonToQuestion)
                     .collect(Collectors.toList());
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public Optional<Entry> getDictionaryEntry(String key) {
+    public Optional<DictionaryEntry> getDictionaryEntry(String key) {
         try {
-            GetRequest getRequest = new GetRequest(EntryType.dictionary.name())
+            GetRequest getRequest = new GetRequest(IndexType.dictionary.name())
                     .id(key);
             GetResponse getResponse = client.get(getRequest, RequestOptions.DEFAULT);
             return Optional.ofNullable(getResponse)
                     .map(GetResponse::getSourceAsString)
-                    .map(JsonUtil::fromJsonToEntry);
+                    .map(JsonUtil::fromJsonToDictionaryEntry);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public void save(Entry entry) {
+    public void save(DictionaryEntry dictionaryEntry) {
+        save(dictionaryEntry, DictionaryEntry::getKey, IndexType.dictionary);
+    }
+
+    public void save(Question question) {
+        save(question, Question::getQuestion, IndexType.question);
+    }
+
+    private <T> void  save(T object, Function<T, String> idMapper, IndexType indexType) {
         try {
-            String indexName = entry.getEntryType().name();
-            IndexRequest request = new IndexRequest(indexName)
-                    .id(entry.getKey())
-                    .source(JsonUtil.toJson(entry), XContentType.JSON);
+            IndexRequest request = new IndexRequest(indexType.name())
+                    .id(idMapper.apply(object))
+                    .source(JsonUtil.toJson(object), XContentType.JSON);
             client.index(request, RequestOptions.DEFAULT);
         } catch (Exception e) {
             throw new IllegalStateException(e);

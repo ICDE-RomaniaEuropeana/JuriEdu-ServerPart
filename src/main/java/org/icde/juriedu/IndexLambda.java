@@ -4,13 +4,19 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyResponseEvent;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.icde.juriedu.model.Entry;
+import org.icde.juriedu.model.DictionaryEntry;
+import org.icde.juriedu.model.IndexType;
+import org.icde.juriedu.model.Question;
 import org.icde.juriedu.service.SearchService;
+import org.icde.juriedu.util.AwsLambdaUtil;
+import org.icde.juriedu.util.JsonUtil;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+
 import java.util.Map;
+
+import static org.icde.juriedu.util.AwsLambdaUtil.*;
 
 @Named("index")
 public class IndexLambda implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
@@ -18,18 +24,19 @@ public class IndexLambda implements RequestHandler<APIGatewayProxyRequestEvent, 
     @Inject
     SearchService service;
 
-    ObjectMapper objectMapper = new ObjectMapper();
-
     @Override
     public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent request, final Context context) {
-        Map<String, String> params = request.getPathParameters();
-
-        try {
-            Entry entry = objectMapper.readValue(request.getBody(), Entry.class);
-            service.save(entry);
-            return new APIGatewayProxyResponseEvent().withBody("OK").withStatusCode(200);
-        } catch (Exception e) {
-            return new APIGatewayProxyResponseEvent().withBody(e.getMessage()).withStatusCode(500);
-        }
+        return execute(() -> {
+            Map<String, String> pathParameters = request.getPathParameters();
+            IndexType indexType = AwsLambdaUtil.getEnumParam("type", pathParameters, IndexType.class);
+            if (indexType == IndexType.question) {
+                Question question = JsonUtil.fromJsonToQuestion(request.getBody());
+                service.save(question);
+            } else if (indexType == IndexType.dictionary) {
+                DictionaryEntry dictionaryEntry = JsonUtil.fromJson(request.getBody(), DictionaryEntry.class);
+                service.save(dictionaryEntry);
+            }
+            return response("Question successfully saved", 200);
+        });
     }
 }

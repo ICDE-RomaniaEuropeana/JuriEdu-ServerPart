@@ -1,5 +1,5 @@
 package org.icde.juriedu.model;
 
-public enum EntryType {
+public enum IndexType {
     question, dictionary
 }
