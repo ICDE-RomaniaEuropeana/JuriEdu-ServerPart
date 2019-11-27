@@ -2,7 +2,7 @@ package org.icde.juriedu.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.icde.juriedu.model.DictionaryEntry;
+import org.icde.juriedu.model.DictionaryTerm;
 import org.icde.juriedu.model.Question;
 
 import java.io.IOException;
@@ -30,7 +30,7 @@ public class JsonUtil {
         return fromJson(json, Question.class);
     }
 
-    public static DictionaryEntry fromJsonToDictionaryEntry(String json) {
-        return fromJson(json, DictionaryEntry.class);
+    public static DictionaryTerm fromJsonToDictionaryEntry(String json) {
+        return fromJson(json, DictionaryTerm.class);
     }
 }

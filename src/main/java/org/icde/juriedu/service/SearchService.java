@@ -11,13 +11,12 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.Index;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.icde.juriedu.model.DictionaryEntry;
+import org.icde.juriedu.model.DictionaryTerm;
 import org.icde.juriedu.model.Question;
 import org.icde.juriedu.model.IndexType;
 import org.icde.juriedu.util.JsonUtil;
@@ -85,7 +84,7 @@ public class SearchService {
         }
     }
 
-    public Optional<DictionaryEntry> getDictionaryEntry(String key) {
+    public Optional<DictionaryTerm> getDictionaryEntry(String key) {
         try {
             GetRequest getRequest = new GetRequest(IndexType.dictionary.name())
                     .id(key);
@@ -98,8 +97,8 @@ public class SearchService {
         }
     }
 
-    public void save(DictionaryEntry dictionaryEntry) {
-        save(dictionaryEntry, DictionaryEntry::getKey, IndexType.dictionary);
+    public void save(DictionaryTerm dictionaryTerm) {
+        save(dictionaryTerm, DictionaryTerm::getKey, IndexType.dictionary);
     }
 
     public void save(List<Question> questions) {

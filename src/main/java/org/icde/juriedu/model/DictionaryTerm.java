@@ -1,6 +1,6 @@
 package org.icde.juriedu.model;
 
-public class DictionaryEntry {
+public class DictionaryTerm {
     private String key;
     private String value;
 
@@ -8,7 +8,7 @@ public class DictionaryEntry {
         return key;
     }
 
-    public DictionaryEntry setKey(String key) {
+    public DictionaryTerm setKey(String key) {
         this.key = key;
         return this;
     }
@@ -17,7 +17,7 @@ public class DictionaryEntry {
         return value;
     }
 
-    public DictionaryEntry setValue(String value) {
+    public DictionaryTerm setValue(String value) {
         this.value = value;
         return this;
     }

@@ -1,6 +1,7 @@
 package org.icde.juriedu.rest;
 
 
+import org.icde.juriedu.model.DictionaryTerm;
 import org.icde.juriedu.model.IndexType;
 import org.icde.juriedu.model.Question;
 import org.icde.juriedu.service.SearchService;
@@ -11,37 +12,26 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
-@Path("entry")
-public class EntryRestEndpoint {
+@Path("dictionary")
+public class DictionaryRestEndpoint {
 
     private final SearchService esService;
 
     @Inject
-    public EntryRestEndpoint(SearchService esService) {
+    public DictionaryRestEndpoint(SearchService esService) {
         this.esService = esService;
     }
 
     @GET
-    @Path("/question/search")
+    @Path("/search")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<Question> search(@QueryParam("type") IndexType entryType,
-                                 @QueryParam("search") String searchKey,
+    public List<Question> search(@QueryParam("search") String searchKey,
                                  @QueryParam("size") @DefaultValue("50") int size) {
-        return esService.search(searchKey, entryType, size);
-    }
-
-
-    @GET
-    @Path("/question/autocomplete")
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<Question> searchQuestion(@QueryParam("type") IndexType entryType,
-                                 @QueryParam("search") String searchKey,
-                                 @QueryParam("size") @DefaultValue("50") int size) {
-        return esService.searchQuestion(searchKey, entryType, size);
+        return esService.search(searchKey, IndexType.dictionary, size);
     }
 
     @GET
-    @Path("/dictionary/{key}")
+    @Path("/term/{key}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response get(@PathParam("key") String key) {
         return esService.getDictionaryEntry(key)
@@ -50,11 +40,11 @@ public class EntryRestEndpoint {
     }
 
     @POST
-    @Path("/index/{type}")
+    @Path("/index")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response save(List<Question> entries) {
+    public Response save(DictionaryTerm term) {
         try {
-            esService.save(entries);
+            esService.save(term);
             return Response.ok().build();
         } catch (Exception e) {
             return Response.serverError().entity(e.getMessage()).build();
