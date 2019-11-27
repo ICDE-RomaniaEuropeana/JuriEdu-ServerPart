@@ -122,11 +122,11 @@ public class SearchService {
         if (searchKey != null) {
             String[] searchElements = searchKey.split(" ");
             BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
-                    .should(QueryBuilders.termsQuery("question", searchElements).boost(4f))
+                    .should(QueryBuilders.termsQuery("questions", searchElements).boost(4f))
                     .should(QueryBuilders.termsQuery("answer", searchElements).boost(2f));
             for (String searchElement : searchElements) {
                 queryBuilder = queryBuilder
-                        .should(QueryBuilders.prefixQuery("question", searchElement).boost(2f))
+                        .should(QueryBuilders.prefixQuery("questions", searchElement).boost(2f))
                         .should(QueryBuilders.prefixQuery("answer", searchElement));
             }
             return queryBuilder;
@@ -140,13 +140,11 @@ public class SearchService {
         if (searchKey != null) {
             String[] searchElements = searchKey.split(" ");
             BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
-                    .should(QueryBuilders.termsQuery("question", searchElements))
-                    .should(QueryBuilders.termsQuery("related", searchElements));
+                    .should(QueryBuilders.termsQuery("questions", searchElements));
 
             for (String searchElement : searchElements) {
                 queryBuilder = queryBuilder
-                        .should(QueryBuilders.prefixQuery("question", searchElement))
-                        .should(QueryBuilders.prefixQuery("related", searchElement));
+                        .should(QueryBuilders.prefixQuery("questions", searchElement));
 
             }
             return queryBuilder;
