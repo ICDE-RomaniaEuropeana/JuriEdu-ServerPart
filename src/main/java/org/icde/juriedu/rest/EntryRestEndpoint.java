@@ -1,8 +1,9 @@
 package org.icde.juriedu.rest;
 
-import org.icde.juriedu.model.Entry;
-import org.icde.juriedu.model.EntryType;
-import org.icde.juriedu.service.EsService;
+
+import org.icde.juriedu.model.IndexType;
+import org.icde.juriedu.model.Question;
+import org.icde.juriedu.service.SearchService;
 
 import javax.inject.Inject;
 import javax.ws.rs.*;
@@ -13,20 +14,30 @@ import java.util.List;
 @Path("entry")
 public class EntryRestEndpoint {
 
-    private final EsService esService;
+    private final SearchService esService;
 
     @Inject
-    public EntryRestEndpoint(EsService esService) {
+    public EntryRestEndpoint(SearchService esService) {
         this.esService = esService;
     }
 
     @GET
     @Path("/search")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<Entry> search(@QueryParam("type") EntryType entryType,
-                              @QueryParam("search") String searchKey,
-                              @QueryParam("size") @DefaultValue("50") int size) {
+    public List<Question> search(@QueryParam("type") IndexType entryType,
+                                 @QueryParam("search") String searchKey,
+                                 @QueryParam("size") @DefaultValue("50") int size) {
         return esService.search(searchKey, entryType, size);
+    }
+
+
+    @GET
+    @Path("/searchQuestion")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Question> searchQuestion(@QueryParam("type") IndexType entryType,
+                                 @QueryParam("search") String searchKey,
+                                 @QueryParam("size") @DefaultValue("50") int size) {
+        return esService.searchQuestion(searchKey, entryType, size);
     }
 
     @GET
@@ -41,9 +52,9 @@ public class EntryRestEndpoint {
     @POST
     @Path("/save/{type}")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response save(Entry entry) {
+    public Response save(List<Question> entries) {
         try {
-            esService.save(entry);
+            esService.save(entries);
             return Response.ok().build();
         } catch (Exception e) {
             return Response.serverError().entity(e.getMessage()).build();
