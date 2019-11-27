@@ -22,7 +22,7 @@ public class EntryRestEndpoint {
     }
 
     @GET
-    @Path("/search")
+    @Path("/question/search")
     @Produces(MediaType.APPLICATION_JSON)
     public List<Question> search(@QueryParam("type") IndexType entryType,
                                  @QueryParam("search") String searchKey,
@@ -32,7 +32,7 @@ public class EntryRestEndpoint {
 
 
     @GET
-    @Path("/searchQuestion")
+    @Path("/question/autocomplete")
     @Produces(MediaType.APPLICATION_JSON)
     public List<Question> searchQuestion(@QueryParam("type") IndexType entryType,
                                  @QueryParam("search") String searchKey,
@@ -41,7 +41,7 @@ public class EntryRestEndpoint {
     }
 
     @GET
-    @Path("/get/dictionary/{key}")
+    @Path("/dictionary/{key}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response get(@PathParam("key") String key) {
         return esService.getDictionaryEntry(key)
@@ -50,7 +50,7 @@ public class EntryRestEndpoint {
     }
 
     @POST
-    @Path("/save/{type}")
+    @Path("/index/{type}")
     @Consumes(MediaType.APPLICATION_JSON)
     public Response save(List<Question> entries) {
         try {
