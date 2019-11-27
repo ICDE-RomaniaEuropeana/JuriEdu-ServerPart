@@ -35,7 +35,7 @@ public class QuestionRestEndpoint {
     @Produces(MediaType.APPLICATION_JSON)
     public List<Question> autocomplete(@QueryParam("search") String searchKey,
                                        @QueryParam("size") @DefaultValue("50") int size) {
-        return esService.searchQuestion(searchKey, IndexType.question, size);
+        return esService.autocomplete(searchKey, IndexType.question, size);
     }
 
     @POST

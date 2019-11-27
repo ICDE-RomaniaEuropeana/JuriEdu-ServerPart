@@ -64,7 +64,7 @@ public class SearchService {
         }
     }
 
-    public List<Question> searchQuestion(String searchKey, IndexType indexType, int size) {
+    public List<Question> autocomplete(String searchKey, IndexType indexType, int size) {
         try {
             String[] indexNames = (indexType != null ? Stream.of(indexType) : Stream.of(IndexType.values()))
                     .map(Enum::name)
@@ -103,7 +103,7 @@ public class SearchService {
 
     public void save(List<Question> questions) {
         for(Question question:questions) {
-            save(question, Question::getQuestion, IndexType.question);
+            save(question, Question::getId, IndexType.question);
         }
     }
 
