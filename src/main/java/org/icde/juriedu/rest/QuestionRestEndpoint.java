@@ -3,13 +3,16 @@ package org.icde.juriedu.rest;
 
 import org.icde.juriedu.model.IndexType;
 import org.icde.juriedu.model.Question;
+import org.icde.juriedu.model.autocompete.AutocompleteResponse;
 import org.icde.juriedu.service.SearchService;
+import org.icde.juriedu.util.AutocompleteMapper;
 
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Path("question")
 public class QuestionRestEndpoint {
@@ -26,16 +29,17 @@ public class QuestionRestEndpoint {
     @Produces(MediaType.APPLICATION_JSON)
     public List<Question> search(@QueryParam("search") String searchKey,
                                  @QueryParam("size") @DefaultValue("50") int size) {
-        return esService.search(searchKey, IndexType.question, size);
+        return esService.search(searchKey.toLowerCase(), IndexType.question, size);
     }
 
 
     @GET
     @Path("/autocomplete")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<Question> autocomplete(@QueryParam("search") String searchKey,
-                                       @QueryParam("size") @DefaultValue("50") int size) {
-        return esService.autocomplete(searchKey, IndexType.question, size);
+    public AutocompleteResponse autocomplete(@QueryParam("search") String searchKey,
+                                             @QueryParam("size") @DefaultValue("50") int size) {
+        List<Question> questions = esService.autocomplete(searchKey.toLowerCase(), IndexType.question, size);
+        return AutocompleteMapper.mapToAutocomplete(questions);
     }
 
     @POST
