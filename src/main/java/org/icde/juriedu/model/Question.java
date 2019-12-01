@@ -8,7 +8,7 @@ public class Question {
     private String chapter;
     private List<String> questions;
     private String answer;
-    private ColorCode colorCode = ColorCode.black;
+
 
     public String getChapter() {
         return chapter;
@@ -49,12 +49,5 @@ public class Question {
         return this;
     }
 
-    public ColorCode getColorCode() {
-        return colorCode;
-    }
 
-    public Question setColorCode(ColorCode colorCode) {
-        this.colorCode = colorCode;
-        return this;
-    }
 }
