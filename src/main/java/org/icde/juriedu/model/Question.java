@@ -20,6 +20,9 @@ public class Question {
     }
 
     public String getId() {
+        if (id == null) {
+            id = UUID.randomUUID();
+        }
         return id.toString();
     }
 
