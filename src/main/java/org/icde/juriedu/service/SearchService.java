@@ -10,12 +10,15 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.text.Text;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
+import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
 import org.icde.juriedu.model.DictionaryTerm;
 import org.icde.juriedu.model.Question;
 import org.icde.juriedu.model.IndexType;
@@ -25,6 +28,7 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -46,18 +50,27 @@ public class SearchService {
 
     public List<Question> search(String searchKey, IndexType indexType, int size) {
         try {
+            HighlightBuilder highlightBuilder = new HighlightBuilder();
+            HighlightBuilder.Field highlightAnswer = new HighlightBuilder.Field("answer");
+            highlightAnswer.highlighterType("unified");
+            highlightAnswer.preTags("<em class='highlight'>");
+            highlightAnswer.postTags("</em>");
+            highlightAnswer.numOfFragments(0);
+            highlightBuilder.field(highlightAnswer);
+
             String[] indexNames = (indexType != null ? Stream.of(indexType) : Stream.of(IndexType.values()))
                     .map(Enum::name)
                     .toArray(String[]::new);
             SearchSourceBuilder searchSourceBuilder = SearchSourceBuilder.searchSource()
-                    .query(createQuery(searchKey))
-                    .size(size);
+                    .query(createQuerySearch(searchKey))
+                    .size(size)
+                    .highlighter(highlightBuilder);
             SearchRequest searchRequest = new SearchRequest(indexNames)
                     .source(searchSourceBuilder);
             SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
             return Arrays.stream(searchResponse.getHits().getHits())
-                    .map(SearchHit::getSourceAsString)
-                    .map(JsonUtil::fromJsonToQuestion)
+                    .map(this::buildHighlightedQuestion)
                     .collect(Collectors.toList());
         } catch (Exception e) {
             throw new IllegalStateException(e);
@@ -70,7 +83,7 @@ public class SearchService {
                     .map(Enum::name)
                     .toArray(String[]::new);
             SearchSourceBuilder searchSourceBuilder = SearchSourceBuilder.searchSource()
-                    .query(createQueryQuestion(searchKey))
+                    .query(createQueryAutocomplete(searchKey))
                     .size(size);
             SearchRequest searchRequest = new SearchRequest(indexNames)
                     .source(searchSourceBuilder);
@@ -118,7 +131,7 @@ public class SearchService {
         }
     }
 
-    private QueryBuilder createQuery(String searchKey) {
+    private QueryBuilder createQuerySearch(String searchKey) {
         if (searchKey != null) {
             String[] searchElements = searchKey.split(" ");
             BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
@@ -129,14 +142,14 @@ public class SearchService {
                         .should(QueryBuilders.prefixQuery("questions", searchElement).boost(2f))
                         .should(QueryBuilders.prefixQuery("answer", searchElement));
             }
+
             return queryBuilder;
-        } else {
-            return QueryBuilders.matchAllQuery();
         }
+
+        return QueryBuilders.matchAllQuery();
     }
 
-
-    private QueryBuilder createQueryQuestion(String searchKey) {
+    private QueryBuilder createQueryAutocomplete(String searchKey) {
         if (searchKey != null) {
             String[] searchElements = searchKey.split(" ");
             BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
@@ -151,5 +164,20 @@ public class SearchService {
         } else {
             return QueryBuilders.matchAllQuery();
         }
+    }
+
+    private Question buildHighlightedQuestion(SearchHit hit) {
+        Question question = JsonUtil.fromJsonToQuestion(hit.getSourceAsString());
+
+        Map<String, HighlightField> highlightFields = hit.getHighlightFields();
+        HighlightField highlight = highlightFields.get("answer");
+
+        if (highlight != null) {
+            Text[] fragments = highlight.fragments();
+            String fragmentString = fragments[0].string();
+            question.setAnswer(fragmentString);
+        }
+
+        return question;
     }
 }
