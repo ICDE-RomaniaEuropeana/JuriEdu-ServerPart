@@ -1,6 +1,7 @@
 package org.icde.juriedu.model;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public class Question {
@@ -8,6 +9,8 @@ public class Question {
     private String chapter;
     private List<String> questions;
     private String answer;
+    private Integer sequence;
+    private Set<String> tags;
 
 
     public String getChapter() {
@@ -49,5 +52,19 @@ public class Question {
         return this;
     }
 
+    public Integer getSequence() {
+        return sequence;
+    }
 
+    public void setSequence(Integer sequence) {
+        this.sequence = sequence;
+    }
+
+    public Set<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(Set<String> tags) {
+        this.tags = tags;
+    }
 }

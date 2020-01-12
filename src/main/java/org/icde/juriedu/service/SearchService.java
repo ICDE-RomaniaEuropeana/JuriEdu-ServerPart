@@ -26,10 +26,7 @@ import org.icde.juriedu.util.JsonUtil;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,7 +36,8 @@ public class SearchService {
 
     private RestHighLevelClient client;
 
-    public SearchService() {}
+    public SearchService() {
+    }
 
     @Inject
     public SearchService(@ConfigProperty(name = "elasticsearch.host") String esHost,
@@ -71,6 +69,59 @@ public class SearchService {
 
             return Arrays.stream(searchResponse.getHits().getHits())
                     .map(this::buildHighlightedQuestion)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public List<Question> searchByTag(String tag) {
+        try {
+            HighlightBuilder highlightBuilder = new HighlightBuilder();
+            HighlightBuilder.Field highlightAnswer = new HighlightBuilder.Field("answer");
+            highlightAnswer.highlighterType("unified");
+            highlightAnswer.preTags("<em class='highlight'>");
+            highlightAnswer.postTags("</em>");
+            highlightAnswer.numOfFragments(0);
+            highlightBuilder.field(highlightAnswer);
+
+
+            SearchSourceBuilder searchSourceBuilder = SearchSourceBuilder.searchSource()
+                    .query(createTagSearch(tag))
+                    .highlighter(highlightBuilder);
+            SearchRequest searchRequest = new SearchRequest(IndexType.question.name())
+                    .source(searchSourceBuilder);
+            SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+            return Arrays.stream(searchResponse.getHits().getHits())
+                    .map(this::buildHighlightedQuestion)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public List<Question> searchByChapter(String chapter) {
+        try {
+            HighlightBuilder highlightBuilder = new HighlightBuilder();
+            HighlightBuilder.Field highlightAnswer = new HighlightBuilder.Field("answer");
+            highlightAnswer.highlighterType("unified");
+            highlightAnswer.preTags("<em class='highlight'>");
+            highlightAnswer.postTags("</em>");
+            highlightAnswer.numOfFragments(0);
+            highlightBuilder.field(highlightAnswer);
+
+
+            SearchSourceBuilder searchSourceBuilder = SearchSourceBuilder.searchSource()
+                    .query(createChapterSearch(chapter))
+                    .highlighter(highlightBuilder);
+            SearchRequest searchRequest = new SearchRequest(IndexType.question.name())
+                    .source(searchSourceBuilder);
+            SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+
+            return Arrays.stream(searchResponse.getHits().getHits())
+                    .map(this::buildHighlightedQuestion)
+                    .sorted(Comparator.comparing(Question::getSequence))
                     .collect(Collectors.toList());
         } catch (Exception e) {
             throw new IllegalStateException(e);
@@ -115,12 +166,12 @@ public class SearchService {
     }
 
     public void save(List<Question> questions) {
-        for(Question question:questions) {
+        for (Question question : questions) {
             save(question, Question::getId, IndexType.question);
         }
     }
 
-    private <T> void  save(T object, Function<T, String> idMapper, IndexType indexType) {
+    private <T> void save(T object, Function<T, String> idMapper, IndexType indexType) {
         try {
             IndexRequest request = new IndexRequest(indexType.name())
                     .id(idMapper.apply(object))
@@ -147,6 +198,23 @@ public class SearchService {
         }
 
         return QueryBuilders.matchAllQuery();
+    }
+
+
+    private QueryBuilder createTagSearch(String tag) {
+        if (tag != null) {
+            return QueryBuilders.prefixQuery("tags", tag);
+        } else {
+            return QueryBuilders.matchAllQuery();
+        }
+    }
+
+    private QueryBuilder createChapterSearch(String chapter) {
+        if (chapter != null) {
+            return QueryBuilders.prefixQuery("chapter", chapter);
+        } else {
+            return QueryBuilders.matchAllQuery();
+        }
     }
 
     private QueryBuilder createQueryAutocomplete(String searchKey) {

@@ -53,4 +53,20 @@ public class QuestionRestEndpoint {
             return Response.serverError().entity(e.getMessage()).build();
         }
     }
+
+
+    @GET
+    @Path("/tag")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Question> searchByTag(@QueryParam("tag") String tag) {
+        return esService.searchByTag(tag.toLowerCase());
+    }
+
+
+    @GET
+    @Path("/chapter")
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<Question> serachChapter(@QueryParam("chapter") String chapter) {
+        return esService.searchByChapter(chapter.toLowerCase());
+    }
 }

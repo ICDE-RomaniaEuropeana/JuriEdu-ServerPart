@@ -37,6 +37,13 @@
       "questions": {
         "type": "text",
         "analyzer": "folding"
+      },
+      "sequence": {
+        "type": "integer"
+      },
+      "tags": {
+        "type": "text",
+        "analyzer": "folding"
       }
     }
   }
